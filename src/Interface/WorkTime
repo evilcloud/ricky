@@ -1,0 +1,23 @@
+module Interface.WorkTime where
+
+import Control.Monad (msum)
+import Data.Char (isSpace)
+import Data.List.Split (splitOn)
+import Data.Maybe (fromMaybe)
+import Data.Time
+
+parseWorkTimes :: String -> Maybe (TimeOfDay, Maybe TimeOfDay)
+parseWorkTimes str =
+  let separators = ["-", " to "]
+      results = map (`splitOn` str) separators
+   in msum $ map parseWithSeparator results
+  where
+    parseWithSeparator :: [String] -> Maybe (TimeOfDay, Maybe TimeOfDay)
+    parseWithSeparator [start] = do
+      startTime <- parseTimeAny (strip start)
+      return (startTime, Nothing)
+    parseWithSeparator [start, end] = do
+      startTime <- parseTimeAny (strip start)
+      endTime <- parseTimeAny (strip end)
+      return (startTime, Just endTime)
+    parseWithSeparator _ = Nothing

@@ -9,7 +9,6 @@ import Data.Maybe (fromJust, isJust)
 import Data.Model (WorkDay (..))
 import Data.Time (Day, TimeOfDay)
 import Parser.Break (parseBreak)
-import Parser.Date (parseDate)
 import Parser.Time (parseWorkTimes)
 
 processArgs :: WorkDay -> [String] -> IO ()
@@ -20,15 +19,13 @@ processArgs workDay (arg : args) = do
 
 processArg :: WorkDay -> String -> IO WorkDay
 processArg workDay arg = do
-  maybeDate <- parseDate arg
+  date <- parseDate arg
   let maybeWorkTimes = parseWorkTimes arg
   let maybeBreak = parseBreak arg
-  case () of
-    _
-      | isJust maybeDate -> updateDate workDay (fromJust maybeDate)
-      | isJust maybeWorkTimes -> updateWorkTimes workDay (fromJust maybeWorkTimes)
-      | isJust maybeBreak -> updateBreak workDay (fromJust maybeBreak)
-      | otherwise -> return workDay
+  case (maybeWorkTimes, maybeBreak) of
+    (Just workTimes, _) -> updateWorkTimes workDay workTimes
+    (_, Just breakTime) -> updateBreak workDay breakTime
+    _ -> updateDate workDay date
 
 updateDate :: WorkDay -> Day -> IO WorkDay
 updateDate workDay date = return workDay {date = date}

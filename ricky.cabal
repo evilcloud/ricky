@@ -27,10 +27,10 @@ library
   exposed-modules:
       Data.Constructor
       Data.Model
+      Interface.Break
+      Interface.Initial
       Interface.Work
       Main
-      Parser.Break
-      Parser.Date
       Parser.Time
   other-modules:
       Paths_ricky
@@ -50,9 +50,9 @@ executable ricky-exe
   other-modules:
       Data.Constructor
       Data.Model
+      Interface.Break
+      Interface.Initial
       Interface.Work
-      Parser.Break
-      Parser.Date
       Parser.Time
       Paths_ricky
   autogen-modules:
