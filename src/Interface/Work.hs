@@ -1,39 +1,86 @@
+-- module Interface.Work
+--   ( parseWorkArgs,
+--   )
+-- where
+
+-- import Control.Monad (msum)
+-- import Data.List.Split (splitOn)
+-- import Data.Maybe (isNothing)
+-- import Data.Time
+-- import Debug.Trace
+-- import qualified Parser.Time as Time
+
+-- parseWorkTimes :: String -> Maybe (TimeOfDay, Maybe TimeOfDay)
+-- parseWorkTimes str =
+--   let separators = ["-", " to "]
+--       results = map (`splitOn` str) separators
+--    in msum $ map parseWithSeparator $ traceShow str results
+--   where
+--     parseWithSeparator :: [String] -> Maybe (TimeOfDay, Maybe TimeOfDay)
+--     parseWithSeparator [start] = do
+--       startTime <- Time.parseTime start
+--       return (startTime, Nothing)
+--     parseWithSeparator [start, end] = do
+--       startTime <- Time.parseTime start
+--       endTime <- Time.parseTime end
+--       return (startTime, Just endTime)
+--     parseWithSeparator _ = Nothing
+
+-- findTime :: [String] -> IO (Maybe (TimeOfDay, Maybe TimeOfDay))
+-- findTime [] = return Nothing
+-- findTime (x : xs) = do
+--   let time = parseWorkTimes x
+--   if isNothing time
+--     then findTime xs
+--     else return time
+
+-- parseWorkArgs :: [String] -> IO ()
+-- parseWorkArgs args = do
+--   putStrLn $ "work: " ++ unwords args
+--   workDate <- Time.parseDate args
+--   workTimes <- findTime args
+--   putStrLn $ "date: " ++ show workDate ++ ", result: " ++ maybe "Invalid work times" show workTimes
+
 module Interface.Work
-  ( processArgs,
+  ( parseWorkArgs,
   )
 where
 
--- Add this line
-import Data.Constructor (addEndTime, addStartTime, createWorkDay, updateBreakTime)
-import Data.Maybe (fromJust, isJust)
-import Data.Model (WorkDay (..))
-import Data.Time (Day, TimeOfDay)
-import Parser.Break (parseBreak)
-import Parser.Time (parseWorkTimes)
+import Control.Monad (msum)
+import Data.List.Split (splitOn)
+import Data.Maybe (isNothing)
+import Data.Time
+import Debug.Trace
+import qualified Parser.Time as Time
 
-processArgs :: WorkDay -> [String] -> IO ()
-processArgs workDay [] = print workDay -- No more arguments, print the WorkDay
-processArgs workDay (arg : args) = do
-  newWorkDay <- processArg workDay arg
-  processArgs newWorkDay args
+parseWorkTimes :: String -> Maybe (TimeOfDay, Maybe TimeOfDay)
+parseWorkTimes str =
+  let separators = ["-", " to "]
+      results = map (`splitOn` str) separators
+   in msum $ map parseWithSeparator $ traceShow str results
+  where
+    parseWithSeparator :: [String] -> Maybe (TimeOfDay, Maybe TimeOfDay)
+    parseWithSeparator [start] = do
+      startTime <- Time.parseTime start
+      return (startTime, Nothing)
+    parseWithSeparator [start, end] = do
+      startTime <- Time.parseTime start
+      endTime <- Time.parseTime end
+      return (startTime, Just endTime)
+    parseWithSeparator _ = Nothing
 
-processArg :: WorkDay -> String -> IO WorkDay
-processArg workDay arg = do
-  date <- parseDate arg
-  let maybeWorkTimes = parseWorkTimes arg
-  let maybeBreak = parseBreak arg
-  case (maybeWorkTimes, maybeBreak) of
-    (Just workTimes, _) -> updateWorkTimes workDay workTimes
-    (_, Just breakTime) -> updateBreak workDay breakTime
-    _ -> updateDate workDay date
+findTime :: [String] -> IO (Maybe (TimeOfDay, Maybe TimeOfDay))
+findTime [] = return Nothing
+findTime (x : xs) = do
+  let time = parseWorkTimes x
+  if isNothing time
+    then findTime xs
+    else return time
 
-updateDate :: WorkDay -> Day -> IO WorkDay
-updateDate workDay date = return workDay {date = date}
-
-updateWorkTimes :: WorkDay -> (TimeOfDay, Maybe TimeOfDay) -> IO WorkDay
-updateWorkTimes workDay (startTime, maybeEndTime) = do
-  newWorkDay <- addStartTime workDay startTime
-  maybe (return newWorkDay) (addEndTime newWorkDay) maybeEndTime
-
-updateBreak :: WorkDay -> Int -> IO WorkDay
-updateBreak workDay breakTime = return $ updateBreakTime workDay breakTime
+parseWorkArgs :: [String] -> IO (Maybe (TimeOfDay, Maybe TimeOfDay))
+parseWorkArgs args = do
+  putStrLn $ "work: " ++ unwords args
+  workDate <- Time.parseDate args
+  workTimes <- findTime args
+  putStrLn $ "date: " ++ show workDate ++ ", result: " ++ maybe "Invalid work times" show workTimes
+  return workTimes

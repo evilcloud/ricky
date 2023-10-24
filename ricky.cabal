@@ -29,6 +29,7 @@ library
       Data.Model
       Interface.Break
       Interface.Initial
+      Interface.Note
       Interface.Work
       Main
       Parser.Time
@@ -52,6 +53,7 @@ executable ricky-exe
       Data.Model
       Interface.Break
       Interface.Initial
+      Interface.Note
       Interface.Work
       Parser.Time
       Paths_ricky

@@ -9,6 +9,7 @@ import Data.Char (isSpace)
 import Data.Maybe (fromMaybe)
 import Data.Time
 import Data.Time.Calendar.WeekDate (toWeekDate)
+import Debug.Trace
 
 strip :: String -> String
 strip = f . f
@@ -25,14 +26,18 @@ parseTime12 = parseTimeM True defaultTimeLocale "%-l%p"
 parseTimeHour :: String -> Maybe TimeOfDay
 parseTimeHour = parseTimeM True defaultTimeLocale "%-k"
 
+-- -- Define a function that tries each format
+-- parseTime :: String -> Maybe TimeOfDay
+-- parseTime str = msum $ map ($ str) [parseTime24, parseTime12, parseTimeHour]
+
 -- Define a function that tries each format
 parseTime :: String -> Maybe TimeOfDay
-parseTime str = msum $ map ($ str) [parseTime24, parseTime12, parseTimeHour]
+parseTime str = trace ("parseTime: " ++ str) $ msum $ map ($ str) [parseTime24, parseTime12, parseTimeHour]
 
 -- Parser for dates
 
-parseDate :: String -> IO Day
-parseDate str = do
+parseDate :: [String] -> IO Day
+parseDate strs = do
   today <- utctDay <$> getCurrentTime
   let (_, _, currentWeekday) = toWeekDate today
   let formats =
@@ -46,7 +51,7 @@ parseDate str = do
           ("saturday", getDayOfWeek today currentWeekday 6),
           ("sunday", getDayOfWeek today currentWeekday 7)
         ]
-  fromMaybe (return today) $ lookup str formats
+  fromMaybe (return today) $ msum $ map (`lookup` formats) strs
 
 getDayOfWeek :: Day -> Int -> Int -> IO Day
 getDayOfWeek today currentWeekday n =
