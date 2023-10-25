@@ -75,12 +75,14 @@
 
 module Interface.Initial where
 
+import qualified Data.Constructor as Constructor
+import Data.Model (WorkDay) -- Add this line
 import Data.Time (TimeOfDay)
 import qualified Interface.Break as Break
 import qualified Interface.Work as Work
 
 keywords :: [String]
-keywords = ["break", "work", "note"]
+keywords = ["break", "work"]
 
 getElementsBeforeKeyword :: [String] -> ([String], [String])
 getElementsBeforeKeyword = break isKeyword
@@ -89,19 +91,27 @@ getElementsBeforeKeyword = break isKeyword
 
 parseArgs :: [String] -> IO ()
 parseArgs args = do
-  results <- parseArgs' args
-  putStrLn $ "Results: " ++ show results
+  workDay <- parseArgs' args
+  putStrLn $ "WorkDay: " ++ show workDay
   where
-    parseArgs' :: [String] -> IO [(Maybe (TimeOfDay, Maybe TimeOfDay), Maybe Int)]
-    parseArgs' [] = return []
-    parseArgs' (arg : restArgs) = case arg of
-      "break" -> do
-        let (breakArgs, rest) = getElementsBeforeKeyword restArgs
-        breakTime <- Break.parseBreakArgs breakArgs
-        results <- parseArgs' rest
-        return $ (Nothing, breakTime) : results
-      _ -> do
-        let (workArgs, rest) = getElementsBeforeKeyword restArgs
-        workTimes <- Work.parseWorkArgs [unwords workArgs]
-        results <- parseArgs' rest
-        return $ (workTimes, Nothing) : results
+    parseArgs' :: [String] -> IO WorkDay
+    parseArgs' [] = Constructor.createWorkDay Nothing
+    parseArgs' (arg : restArgs) = do
+      workDay <- parseArgs' []
+      case arg of
+        "break" -> do
+          let (breakArgs, rest) = getElementsBeforeKeyword restArgs
+          maybeBreakTime <- Break.parseBreakArgs breakArgs
+          case maybeBreakTime of
+            Just breakTime -> do
+              updatedWorkDay <- parseArgs' rest
+              return $ Constructor.updateBreakTime updatedWorkDay breakTime
+            Nothing -> do
+              putStrLn "Warning: Invalid break time."
+              parseArgs' rest
+        _ -> do
+          let (workArgs, rest) = getElementsBeforeKeyword restArgs
+          workTimes <- Work.parseWorkArgs [unwords workArgs]
+          updatedWorkDay <- foldM Constructor.addWorkTime workDay workTimes
+          nextWorkDay <- parseArgs' rest
+          return $ mergeWorkDays updatedWorkDay nextWorkDay
